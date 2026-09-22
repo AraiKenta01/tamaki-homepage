@@ -1,18 +1,39 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection, render } from "astro:content";
+
+const [profile] = await getCollection("profile");
+const { Content } = await render(profile);
+
+const snsLinks = [
+  { label: "Instagram", url: profile.data.instagramUrl },
+  { label: "X", url: profile.data.xUrl },
+  { label: "TikTok", url: profile.data.tiktokUrl },
+  { label: "YouTube", url: profile.data.youtubeUrl },
+].filter((link): link is { label: string; url: string } => Boolean(link.url));
 ---
 
 <BaseLayout title="TOP">
-  <p class="marquee-note">工事中です。少しずつ更新していきます。</p>
-
-  <div class="box">
-    <p>
-      ようこそ、玉置優里のホームページへ。<br />
-      自己紹介・スケジュール・ディスコグラフィーは近日公開予定です。
-    </p>
-  </div>
-
-  <div class="box">
-    <p>掲示板・ブロック崩しも準備中です。お楽しみに。</p>
+  <div class="box profile-box">
+    {profile.data.photo && (
+      <img class="profile-photo" src={profile.data.photo} alt={profile.data.name} />
+    )}
+    <h2>{profile.data.name}</h2>
+    {profile.data.catchphrase && <p class="profile-catchphrase">{profile.data.catchphrase}</p>}
+    <div class="profile-body">
+      <Content />
+    </div>
+    {snsLinks.length > 0 && (
+      <p class="profile-sns">
+        {snsLinks.map((link, i) => (
+          <>
+            {i > 0 && " ｜ "}
+            <a href={link.url} target="_blank" rel="noopener noreferrer">
+              {link.label}
+            </a>
+          </>
+        ))}
+      </p>
+    )}
   </div>
 </BaseLayout>

@@ -1,13 +1,21 @@
 import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
 
-// 自己紹介: 単一エントリ（src/content/profile/main.md）。
-// Sveltia CMSからは「ファイルコレクション」として、フォーム入力だけで編集できるようにする。
+// 自己紹介: 単一エントリ（src/content/profile/main.md）。TOPページに直接表示する
+// （独立した自己紹介ページは廃止）。SNSリンク・連絡先メールもここにまとめて持つ。
+// photoはCMSアップロード先（public/images/uploads）へのパス文字列であり、
+// Astroのimage()最適化パイプラインには乗らない（CMSアップロード画像の一般的な制約）。
 const profile = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/profile" }),
   schema: z.object({
     name: z.string(),
     catchphrase: z.string().optional(),
+    photo: z.string().optional(),
+    email: z.string().email().optional(),
+    instagramUrl: z.string().url().optional(),
+    xUrl: z.string().url().optional(),
+    tiktokUrl: z.string().url().optional(),
+    youtubeUrl: z.string().url().optional(),
   }),
 });
 

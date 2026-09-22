@@ -1,0 +1,28 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const [profile] = await getCollection("profile");
+const email = profile.data.email;
+---
+
+<BaseLayout title="お問い合わせ">
+  <div class="box">
+    {
+      email ? (
+        <p>
+          お仕事のご依頼・取材・その他お問い合わせは、以下のメールアドレスまでご連絡ください。
+        </p>
+      ) : (
+        <p>お問い合わせ先は準備中です。</p>
+      )
+    }
+    {
+      email && (
+        <p class="contact-email">
+          <a href={`mailto:${email}`}>{email}</a>
+        </p>
+      )
+    }
+  </div>
+</BaseLayout>
