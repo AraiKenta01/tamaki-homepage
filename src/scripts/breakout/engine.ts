@@ -1,14 +1,17 @@
 /**
  * ブロック崩しのゲームロジック本体。
- * DOM描画（Canvas）・効果音（sound.ts）以外の外部システムには一切依存しない。
+ * DOM描画（Canvas）・効果音（sound.ts）・ステージ配置（stages.ts）以外の
+ * 外部システムには一切依存しない。
  * スコアの永続化・送信は score-store.ts 側の責務であり、
  * ここではコールバック経由で「今のスコア」を通知するだけに留める
  * （将来ランキングAPIに差し替える際、このファイルは変更不要にするため）。
  */
 
 import { breakoutSound } from "./sound";
+import { getStagePattern, getStageLap, PATTERN_COLS } from "./stages";
 
 export type GameState = "ready" | "playing" | "paused" | "gameover" | "cleared";
+export type CapsuleType = "multi" | "wide" | "pierce";
 
 export interface BreakoutCallbacks {
   onScoreChange?: (score: number) => void;
@@ -39,6 +42,7 @@ interface Brick {
   height: number;
   hp: number;
   maxHp: number;
+  unbreakable: boolean;
 }
 
 /** ブロック破壊時に飛び散る破片（演出のみ、当たり判定は持たない）。 */
@@ -51,31 +55,49 @@ interface Particle {
   color: string;
 }
 
-/** 落ちてくるマルチボールのカプセル。パドルで受けるとボールが増える。 */
+/** 落ちてくるパワーアップカプセル。パドルで受けると種類に応じた効果が発動する。 */
 interface Capsule {
   x: number;
   y: number;
   vy: number;
   radius: number;
+  type: CapsuleType;
 }
 
-const ROWS = 5;
-const COLS = 8;
-const BRICK_GAP = 4;
-const BRICK_HEIGHT = 16;
+const PATTERN_ROWS_AREA_TOP = 26;
+const BRICK_GAP = 3;
+const BRICK_HEIGHT = 14;
 const PADDLE_HEIGHT = 10;
 const PADDLE_WIDTH = 70;
+const PADDLE_WIDE_SCALE = 1.45;
+const PADDLE_WIDE_DURATION = 8; // 秒
+const PIERCE_DURATION = 6; // 秒
 const BALL_RADIUS = 5;
 const INITIAL_LIVES = 3;
 const BASE_BALL_SPEED = 260; // px/sec。難易度を上げるため元の220から引き上げ
-const PADDLE_SPEED = 380; // px/sec
+const PADDLE_SPEED = 380; // px/sec（キーボード操作時のみ使用）
 const MAX_SPEED_MULTIPLIER = 2.3;
 const SPEED_RAMP_PER_BRICK = 0.035;
 const MAX_BALLS = 5;
-const CAPSULE_DROP_CHANCE = 0.14;
+const CAPSULE_DROP_CHANCE = 0.16;
 const CAPSULE_FALL_SPEED = 120;
 const STAGE_SPEED_BASELINE_STEP = 0.12; // ステージが進むごとの開始速度の底上げ
 const MAX_BRICK_HP = 4;
+const CAPSULE_WEIGHTS: readonly [CapsuleType, number][] = [
+  ["multi", 0.5],
+  ["wide", 0.25],
+  ["pierce", 0.25],
+];
+
+function pickCapsuleType(): CapsuleType {
+  const roll = Math.random();
+  let acc = 0;
+  for (const [type, weight] of CAPSULE_WEIGHTS) {
+    acc += weight;
+    if (roll < acc) return type;
+  }
+  return "multi";
+}
 
 export class BreakoutEngine {
   private readonly canvas: HTMLCanvasElement;
@@ -91,6 +113,8 @@ export class BreakoutEngine {
   private particles: Particle[] = [];
   private capsules: Capsule[] = [];
   private speedMultiplier = 1;
+  private paddleWideTimer = 0;
+  private pierceTimer = 0;
 
   private score = 0;
   private lives = INITIAL_LIVES;
@@ -209,6 +233,8 @@ export class BreakoutEngine {
     this.particles = [];
     this.capsules = [];
     this.speedMultiplier = 1;
+    this.paddleWideTimer = 0;
+    this.pierceTimer = 0;
     this.setScore(0);
     this.setLives(INITIAL_LIVES);
   }
@@ -248,6 +274,13 @@ export class BreakoutEngine {
     };
   }
 
+  /** 幅を変えつつ中心位置は保つ（パドル拡大パワーアップ用）。 */
+  private setPaddleWidth(newWidth: number): void {
+    const center = this.paddle.x + this.paddle.width / 2;
+    this.paddle.width = newWidth;
+    this.paddle.x = Math.max(0, Math.min(this.width - newWidth, center - newWidth / 2));
+  }
+
   private createBall(): Ball {
     const angle = (Math.PI / 4) * (Math.random() < 0.5 ? -1 : 1) - Math.PI / 2;
     return {
@@ -260,30 +293,52 @@ export class BreakoutEngine {
   }
 
   /**
-   * ステージが進むほど硬いブロックの段数が増え、さらに数ステージごとに
-   * 硬いブロックのHP自体も底上げされる（際限なく難しくするための階段状の成長）。
+   * ステージごとにドット絵パターン（stages.ts）から配置を読み込む。
+   * パターンは STAGE_PATTERNS を順番に繰り返し使い、一周するたびに
+   * ・硬いブロックのHPが底上げされ
+   * ・空きマスの一部が壊せない障害物ブロックに変わる
+   * ことで際限なく難しくなっていく。
    */
   private createBricks(): Brick[] {
     const bricks: Brick[] = [];
-    const brickWidth = (this.width - BRICK_GAP * (COLS + 1)) / COLS;
-    const offsetTop = 30;
-    const toughRows = Math.min(ROWS, 2 + Math.floor((this.stage - 1) / 2));
-    const extraHp = Math.floor((this.stage - 1) / 4);
+    const pattern = getStagePattern(this.stage);
+    const lap = getStageLap(this.stage);
+    const extraHp = lap; // 一周するごとにHP+1
+    const obstacleCount = Math.min(10, lap * 2);
 
-    for (let row = 0; row < ROWS; row++) {
-      const base = row < toughRows ? 2 : 1;
-      const hp = Math.min(MAX_BRICK_HP, base + extraHp);
-      for (let col = 0; col < COLS; col++) {
-        bricks.push({
-          x: BRICK_GAP + col * (brickWidth + BRICK_GAP),
-          y: offsetTop + BRICK_GAP + row * (BRICK_HEIGHT + BRICK_GAP),
-          width: brickWidth,
-          height: BRICK_HEIGHT,
-          hp,
-          maxHp: hp,
-        });
+    const brickWidth = (this.width - BRICK_GAP * (PATTERN_COLS + 1)) / PATTERN_COLS;
+
+    const emptyCells: { row: number; col: number }[] = [];
+
+    pattern.forEach((rowStr, row) => {
+      for (let col = 0; col < PATTERN_COLS; col++) {
+        const ch = rowStr[col] ?? ".";
+        const x = BRICK_GAP + col * (brickWidth + BRICK_GAP);
+        const y = PATTERN_ROWS_AREA_TOP + BRICK_GAP + row * (BRICK_HEIGHT + BRICK_GAP);
+
+        if (ch === ".") {
+          emptyCells.push({ row, col });
+          continue;
+        }
+        if (ch === "#") {
+          bricks.push({ x, y, width: brickWidth, height: BRICK_HEIGHT, hp: 1, maxHp: 1, unbreakable: true });
+          continue;
+        }
+        const baseHp = ch === "2" ? 2 : 1;
+        const hp = Math.min(MAX_BRICK_HP, baseHp + extraHp);
+        bricks.push({ x, y, width: brickWidth, height: BRICK_HEIGHT, hp, maxHp: hp, unbreakable: false });
       }
+    });
+
+    // 周回ボーナス障害物: 空いているマスの一部を壊せないブロックにして密度を上げる
+    for (let i = 0; i < obstacleCount && emptyCells.length > 0; i++) {
+      const idx = Math.floor(Math.random() * emptyCells.length);
+      const { row, col } = emptyCells.splice(idx, 1)[0];
+      const x = BRICK_GAP + col * (brickWidth + BRICK_GAP);
+      const y = PATTERN_ROWS_AREA_TOP + BRICK_GAP + row * (BRICK_HEIGHT + BRICK_GAP);
+      bricks.push({ x, y, width: brickWidth, height: BRICK_HEIGHT, hp: 1, maxHp: 1, unbreakable: true });
     }
+
     return bricks;
   }
 
@@ -345,6 +400,22 @@ export class BreakoutEngine {
     }
   }
 
+  private activateCapsule(type: CapsuleType): void {
+    switch (type) {
+      case "multi":
+        this.splitBalls();
+        break;
+      case "wide":
+        this.paddleWideTimer = PADDLE_WIDE_DURATION;
+        this.setPaddleWidth(PADDLE_WIDTH * PADDLE_WIDE_SCALE);
+        break;
+      case "pierce":
+        this.pierceTimer = PIERCE_DURATION;
+        break;
+    }
+    breakoutSound.powerUp();
+  }
+
   private update(dt: number): void {
     // パドル移動（キーボード優先、なければポインタ追従）
     if (this.movingLeft && !this.movingRight) {
@@ -357,7 +428,20 @@ export class BreakoutEngine {
     }
     this.paddle.x = Math.max(0, Math.min(this.width - this.paddle.width, this.paddle.x));
 
+    // パドル拡大タイマー
+    if (this.paddleWideTimer > 0) {
+      this.paddleWideTimer = Math.max(0, this.paddleWideTimer - dt);
+      if (this.paddleWideTimer === 0) {
+        this.setPaddleWidth(PADDLE_WIDTH);
+      }
+    }
+    // 貫通弾タイマー
+    if (this.pierceTimer > 0) {
+      this.pierceTimer = Math.max(0, this.pierceTimer - dt);
+    }
+
     const paddleY = this.height - 20;
+    const piercing = this.pierceTimer > 0;
 
     for (const ball of this.balls) {
       ball.x += ball.vx * dt;
@@ -396,7 +480,7 @@ export class BreakoutEngine {
         breakoutSound.paddleHit();
       }
 
-      // ブロック衝突（1フレームにつき1ボール1ブロックまで）
+      // ブロック衝突（1フレームにつき1ボール1ブロックまで。貫通弾は反射せず通過する）
       for (const brick of this.bricks) {
         if (brick.hp <= 0) continue;
         if (
@@ -405,8 +489,16 @@ export class BreakoutEngine {
           ball.y + ball.radius > brick.y &&
           ball.y - ball.radius < brick.y + brick.height
         ) {
+          if (brick.unbreakable) {
+            ball.vy *= -1; // 壊せないブロックは貫通弾でも跳ね返す
+            breakoutSound.wallBounce();
+            break;
+          }
+
           brick.hp -= 1;
-          ball.vy *= -1;
+          if (!piercing) {
+            ball.vy *= -1;
+          }
           this.setScore(this.score + 10 * brick.maxHp);
 
           const brickColor = brick.hp > 0 ? "#c76b1a" : "#8b0000";
@@ -419,6 +511,7 @@ export class BreakoutEngine {
               y: brick.y + brick.height / 2,
               vy: CAPSULE_FALL_SPEED,
               radius: 7,
+              type: pickCapsuleType(),
             });
           }
 
@@ -452,7 +545,7 @@ export class BreakoutEngine {
       }
     }
 
-    // カプセル（マルチボール）落下・パドルキャッチ判定
+    // カプセル（パワーアップ）落下・パドルキャッチ判定
     for (const capsule of this.capsules) {
       capsule.y += capsule.vy * dt;
     }
@@ -463,8 +556,7 @@ export class BreakoutEngine {
         capsule.x >= this.paddle.x - capsule.radius &&
         capsule.x <= this.paddle.x + this.paddle.width + capsule.radius;
       if (caught) {
-        this.splitBalls();
-        breakoutSound.powerUp();
+        this.activateCapsule(capsule.type);
         return false;
       }
       return capsule.y - capsule.radius <= this.height;
@@ -491,20 +583,25 @@ export class BreakoutEngine {
     ctx.fillStyle = "#0f0f23";
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // ブロック（耐久が残っているほど明るい色）
+    // ブロック（耐久が残っているほど明るい色、壊せないブロックはグレー）
     for (const brick of this.bricks) {
       if (brick.hp <= 0) continue;
-      ctx.fillStyle = brick.hp >= 2 ? "#c76b1a" : "#8b0000";
+      ctx.fillStyle = brick.unbreakable ? "#555" : brick.hp >= 2 ? "#c76b1a" : "#8b0000";
       ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
-      ctx.strokeStyle = "#f5f2e9";
+      ctx.strokeStyle = brick.unbreakable ? "#999" : "#f5f2e9";
       ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
     }
 
-    // カプセル
+    // カプセル（種類ごとに色分け）
+    const capsuleColor: Record<CapsuleType, string> = {
+      multi: "#4ade80",
+      wide: "#38bdf8",
+      pierce: "#f97316",
+    };
     for (const capsule of this.capsules) {
       ctx.beginPath();
       ctx.arc(capsule.x, capsule.y, capsule.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "#4ade80";
+      ctx.fillStyle = capsuleColor[capsule.type];
       ctx.fill();
       ctx.strokeStyle = "#f5f2e9";
       ctx.stroke();
@@ -518,8 +615,8 @@ export class BreakoutEngine {
     }
     ctx.globalAlpha = 1;
 
-    // パドル
-    ctx.fillStyle = "#f5f2e9";
+    // パドル（貫通弾中はオレンジ枠で分かるようにする）
+    ctx.fillStyle = this.pierceTimer > 0 ? "#f97316" : "#f5f2e9";
     ctx.fillRect(this.paddle.x, this.height - 20, this.paddle.width, this.paddle.height);
 
     // ボール

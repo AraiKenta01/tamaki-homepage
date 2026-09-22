@@ -7,7 +7,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <p>
       矢印キー（またはA/D）でパドルを操作、あるいはマウス／タッチでキャンバスに触れて動かせます（指の位置にそのまま追従します）。<br />
       スタート・再挑戦はキャンバスをタップ／クリックかSpaceキー。一時停止は下のボタンから。<br />
-      緑のカプセルをパドルでキャッチするとボールが増えます。ブロックを全部壊すと次のステージへ進み、どんどん硬く・速くなっていきます。
+      ブロックを全部壊すと次のステージへ進み、配置パターンが変わりながらどんどん硬く・速くなっていきます。<br />
+      落ちてくるカプセルをパドルでキャッチ: <span class="capsule-legend capsule-legend-multi">緑</span>=ボール増加／<span
+        class="capsule-legend capsule-legend-wide">青</span>=パドル拡大／<span class="capsule-legend capsule-legend-pierce"
+        >オレンジ</span
+      >=貫通弾。グレーのブロックは壊せません。
     </p>
   </div>
 
@@ -56,6 +60,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   }
   .breakout-tweet-link:visited {
     color: #fff;
+  }
+
+  .capsule-legend {
+    font-weight: bold;
+  }
+  .capsule-legend-multi {
+    color: #4ade80;
+  }
+  .capsule-legend-wide {
+    color: #38bdf8;
+  }
+  .capsule-legend-pierce {
+    color: #f97316;
   }
 
   .breakout-stage {
