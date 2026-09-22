@@ -1,0 +1,167 @@
+/*
+  阿部寛のホームページ・2chまとめサイト的な「古の質感」を再現するベーススタイル。
+  - 背景は純白ではなくわずかに黄みがかったクリーム色（CRT時代のブラウザ既定に近い質感）
+  - リンクは現代のフラットデザインではなく、ブラウザ既定の青／紫を踏襲する
+  - 枠線はinset/outsetで立体感を出し、当時のテーブル罫線の雰囲気に寄せる
+*/
+
+:root {
+  --bg: #f5f2e9;
+  --surface: #fffdf7;
+  --text: #1a1a1a;
+  --text-muted: #555;
+  --border: #999;
+  --border-light: #ccc;
+  --link: #0000ee;
+  --link-visited: #551a8b;
+  --link-hover: #ff0000;
+  --header-bg: #2f4f2f;
+  --header-fg: #f5f2e9;
+  --accent: #8b0000;
+
+  --font-body: "MS Pゴシック", "MS PGothic", Osaka, "ヒラギノ角ゴ Pro W3",
+    "Hiragino Kaku Gothic Pro", "メイリオ", Meiryo, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+a {
+  color: var(--link);
+}
+a:visited {
+  color: var(--link-visited);
+}
+a:hover,
+a:focus {
+  color: var(--link-hover);
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 0 3em;
+}
+
+/* ヘッダー */
+.site-header {
+  background: var(--header-bg);
+  color: var(--header-fg);
+  padding: 0.6em 1em;
+  border-bottom: 3px double var(--border);
+}
+.site-header h1 {
+  margin: 0;
+  font-size: 1.4em;
+  font-weight: normal;
+  letter-spacing: 0.05em;
+}
+.site-header .tagline {
+  margin: 0.2em 0 0;
+  font-size: 0.8em;
+  color: #cfe0cf;
+}
+
+/* ナビ */
+.site-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.4em 1em;
+  font-size: 0.9em;
+}
+.site-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em 0;
+}
+.site-nav li + li::before {
+  content: "｜";
+  color: var(--border);
+  margin: 0 0.4em;
+}
+.site-nav a {
+  text-decoration: underline;
+}
+
+/* メインコンテンツ */
+.site-main {
+  background: var(--surface);
+  border-left: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  padding: 1.2em 1em;
+  min-height: 40vh;
+}
+
+.box {
+  border-style: outset;
+  border-width: 2px;
+  border-color: var(--border-light);
+  background: var(--surface);
+  padding: 0.8em 1em;
+  margin: 0 0 1.2em;
+}
+
+.marquee-note {
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+  background: #fff8f0;
+  padding: 0.4em 0.8em;
+  font-size: 0.85em;
+  margin: 0 0 1em;
+}
+
+/* フッター */
+.site-footer {
+  border-top: 3px double var(--border);
+  background: var(--surface);
+  padding: 0.8em 1em;
+  font-size: 0.8em;
+  color: var(--text-muted);
+  text-align: center;
+}
+.site-footer p {
+  margin: 0.3em 0;
+}
+
+/* レスポンシブ: 狭い画面ではナビを縦積みにし、余白を詰める */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  .page {
+    padding-bottom: 2em;
+  }
+  .site-header,
+  .site-nav,
+  .site-main,
+  .site-footer {
+    padding-left: 0.7em;
+    padding-right: 0.7em;
+  }
+  .site-nav ul {
+    flex-direction: column;
+    gap: 0.2em;
+  }
+  .site-nav li + li::before {
+    content: "";
+    margin: 0;
+  }
+}
