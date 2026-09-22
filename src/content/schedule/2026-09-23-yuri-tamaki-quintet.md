@@ -11,6 +11,4 @@ note: |-
   Hiroto Homma
   Ryuichi Hioki
   Koki Yoshikawa
-
-  https://www.instagram.com/p/DcdjfMaFBU5/?img_index=1&stkn=MWE3bDZtOWFqc2Rjdw==
 ---
