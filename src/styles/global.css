@@ -172,6 +172,10 @@ a.discography-list-item:focus {
   margin: 0 0 1em;
 }
 
+.schedule-note {
+  white-space: pre-wrap;
+}
+
 .marquee-note {
   border: 1px dashed var(--accent);
   color: var(--accent);

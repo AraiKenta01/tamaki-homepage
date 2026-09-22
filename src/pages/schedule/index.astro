@@ -30,7 +30,7 @@ const formatDate = (d: Date) =>
             <strong>{formatDate(entry.data.date)}</strong> — {entry.data.venue}
           </p>
           <p>{entry.data.title}</p>
-          {entry.data.note && <p>{entry.data.note}</p>}
+          {entry.data.note && <p class="schedule-note">{entry.data.note}</p>}
           {entry.data.url && (
             <p>
               <a href={entry.data.url}>詳細・チケット情報</a>
