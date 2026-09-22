@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const all = await getCollection("schedule");
+
+// 過去分は削除せずコンテンツとして残し続け、表示側で開催日により
+// 未来分のみに絞り込む（玉置優里HPの設計方針: データは全件保持、表示は自動フィルタ）。
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const upcoming = all
+  .filter((entry) => entry.data.date >= today)
+  .sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf());
+
+const formatDate = (d: Date) =>
+  d.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+---
+
+<BaseLayout title="スケジュール">
+  {
+    upcoming.length === 0 ? (
+      <div class="box">
+        <p>現在、公開予定のスケジュールはありません。</p>
+      </div>
+    ) : (
+      upcoming.map((entry) => (
+        <div class="box">
+          <p>
+            <strong>{formatDate(entry.data.date)}</strong> — {entry.data.venue}
+          </p>
+          <p>{entry.data.title}</p>
+          {entry.data.note && <p>{entry.data.note}</p>}
+          {entry.data.url && (
+            <p>
+              <a href={entry.data.url}>詳細・チケット情報</a>
+            </p>
+          )}
+        </div>
+      ))
+    )
+  }
+</BaseLayout>

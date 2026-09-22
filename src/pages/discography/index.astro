@@ -1,0 +1,41 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+const all = (await getCollection("discography")).sort(
+  (a, b) => b.data.releaseDate.valueOf() - a.data.releaseDate.valueOf(),
+);
+
+const formatDate = (d: Date) =>
+  d.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+
+const TYPE_LABEL: Record<string, string> = {
+  single: "シングル",
+  album: "アルバム",
+  EP: "EP",
+};
+---
+
+<BaseLayout title="ディスコグラフィー">
+  {
+    all.length === 0 ? (
+      <div class="box">
+        <p>近日公開予定です。</p>
+      </div>
+    ) : (
+      all.map((entry) => (
+        <div class="box">
+          <p>
+            <strong>{entry.data.title}</strong>（{TYPE_LABEL[entry.data.type]}）
+          </p>
+          <p>{formatDate(entry.data.releaseDate)}</p>
+          <p>
+            {entry.data.spotifyUrl && <a href={entry.data.spotifyUrl}>Spotify</a>}
+            {entry.data.spotifyUrl && entry.data.youtubeUrl && " ｜ "}
+            {entry.data.youtubeUrl && <a href={entry.data.youtubeUrl}>YouTube</a>}
+          </p>
+        </div>
+      ))
+    )
+  }
+</BaseLayout>
