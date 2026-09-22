@@ -1,17 +1,18 @@
 ---
-
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout title="TOP">
+  <p class="marquee-note">工事中です。少しずつ更新していきます。</p>
+
+  <div class="box">
+    <p>
+      ようこそ、玉置優里のホームページへ。<br />
+      自己紹介・スケジュール・ディスコグラフィーは近日公開予定です。
+    </p>
+  </div>
+
+  <div class="box">
+    <p>来客カウンター・掲示板・ブロック崩しも準備中です。お楽しみに。</p>
+  </div>
+</BaseLayout>
