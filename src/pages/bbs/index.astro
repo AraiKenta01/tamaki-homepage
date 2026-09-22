@@ -1,0 +1,129 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
+
+if (import.meta.env.DEV && !turnstileSiteKey) {
+  console.warn(
+    "[bbs] PUBLIC_TURNSTILE_SITE_KEY が未設定です。.env.example を参考に .env に設定してください。",
+  );
+}
+---
+
+<BaseLayout title="掲示板">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+  <div class="box">
+    <p>
+      誰でも書き込めます。投稿は削除せずすべて保存され、<a href="/bbs/log/">過去ログ</a>として公開され続けます。
+    </p>
+  </div>
+
+  <form id="bbs-form" class="box bbs-form">
+    <div class="bbs-form-row">
+      <label for="bbs-name">名前</label>
+      <input id="bbs-name" name="name" type="text" maxlength="30" placeholder="名無しさん" autocomplete="off" />
+    </div>
+    <div class="bbs-form-row">
+      <label for="bbs-body">本文</label>
+      <textarea id="bbs-body" name="body" required maxlength="1000" rows="4"></textarea>
+    </div>
+    <div class="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
+    <button type="submit">書き込む</button>
+    <p id="bbs-form-message" role="status" class="bbs-form-message"></p>
+  </form>
+
+  <h2 class="bbs-section-title">最新の投稿</h2>
+  <div id="bbs-latest-list"></div>
+
+  <div class="box">
+    <p><a href="/bbs/log/">過去ログを見る →</a></p>
+  </div>
+</BaseLayout>
+
+<script>
+  import { fetchPosts, renderPosts } from "../../scripts/bbs-client";
+
+  const list = document.querySelector<HTMLElement>("#bbs-latest-list");
+  const form = document.querySelector<HTMLFormElement>("#bbs-form");
+  const message = document.querySelector<HTMLElement>("#bbs-form-message");
+
+  declare global {
+    interface Window {
+      turnstile?: { reset: (widgetId?: string) => void };
+    }
+  }
+
+  async function loadLatest() {
+    if (!list) return;
+    try {
+      const { posts } = await fetchPosts(1);
+      renderPosts(list, posts);
+    } catch {
+      list.textContent = "投稿の読み込みに失敗しました。";
+    }
+  }
+
+  function resetTurnstile() {
+    window.turnstile?.reset();
+  }
+
+  function errorMessage(code: string | undefined): string {
+    switch (code) {
+      case "rate_limited":
+        return "短時間に投稿しすぎです。少し時間をおいてお試しください。";
+      case "turnstile_failed":
+        return "認証に失敗しました。もう一度お試しください。";
+      case "ng_word":
+        return "投稿内容に不適切な表現が含まれています。";
+      case "empty_body":
+        return "本文を入力してください。";
+      case "body_too_long":
+        return "本文が長すぎます。";
+      default:
+        return "投稿に失敗しました。";
+    }
+  }
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!message) return;
+
+    const formData = new FormData(form);
+    const name = String(formData.get("name") ?? "");
+    const body = String(formData.get("body") ?? "");
+    const turnstileToken = String(formData.get("cf-turnstile-response") ?? "");
+
+    if (!turnstileToken) {
+      message.textContent = "認証が完了していません。少し待ってから再度お試しください。";
+      return;
+    }
+
+    message.textContent = "送信中...";
+
+    try {
+      const res = await fetch("/api/bbs/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, body, turnstileToken }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        message.textContent = errorMessage(data.error);
+        resetTurnstile();
+        return;
+      }
+
+      form.reset();
+      resetTurnstile();
+      message.textContent = "書き込みました。";
+      await loadLatest();
+    } catch {
+      message.textContent = "通信エラーが発生しました。";
+      resetTurnstile();
+    }
+  });
+
+  loadLatest();
+</script>

@@ -1,0 +1,62 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="過去ログ">
+  <div class="box">
+    <p><a href="/bbs/">掲示板に戻る</a></p>
+  </div>
+
+  <div id="bbs-log-list"></div>
+
+  <nav class="bbs-pagination" id="bbs-pagination" aria-label="ページ送り"></nav>
+</BaseLayout>
+
+<script>
+  import { fetchPosts, renderPosts } from "../../../scripts/bbs-client";
+
+  const list = document.querySelector<HTMLElement>("#bbs-log-list");
+  const pagination = document.querySelector<HTMLElement>("#bbs-pagination");
+
+  const params = new URLSearchParams(location.search);
+  const page = Math.max(1, Number.parseInt(params.get("page") ?? "1", 10) || 1);
+
+  function makeLink(targetPage: number, label: string): HTMLAnchorElement {
+    const a = document.createElement("a");
+    a.href = `?page=${targetPage}`;
+    a.textContent = label;
+    return a;
+  }
+
+  function renderPagination(current: number, totalPages: number) {
+    if (!pagination) return;
+    pagination.textContent = "";
+
+    if (current > 1) {
+      pagination.append(makeLink(current - 1, "← 新しい方へ"));
+      pagination.append(" ");
+    }
+
+    const info = document.createElement("span");
+    info.textContent = `${current} / ${totalPages} ページ`;
+    pagination.append(info);
+
+    if (current < totalPages) {
+      pagination.append(" ");
+      pagination.append(makeLink(current + 1, "古い方へ →"));
+    }
+  }
+
+  async function load() {
+    if (!list) return;
+    try {
+      const data = await fetchPosts(page);
+      renderPosts(list, data.posts);
+      renderPagination(data.page, data.totalPages);
+    } catch {
+      list.textContent = "投稿の読み込みに失敗しました。";
+    }
+  }
+
+  load();
+</script>
