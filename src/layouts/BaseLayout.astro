@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import HitCounter from "../components/HitCounter.astro";
 
 interface Props {
   title: string;
@@ -49,6 +50,7 @@ const navItems = [
 
       <footer class="site-footer">
         <p>リンクフリーです。相互リンク募集中。</p>
+        <HitCounter />
         <p>&copy; 玉置優里ホームページ</p>
       </footer>
     </div>
