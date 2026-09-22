@@ -30,10 +30,24 @@
   > 内でルーティングし、`assets.run_worker_first: ["/api/*"]`で`/api/*`だけWorkerを優先させ、それ以外は
   > 静的アセット（`env.ASSETS.fetch(request)`）にフォールバックする構成にしている。各機能のAPIハンドラは
   > `src/api/*.ts`に1ファイルずつ置き、`src/index.ts`からインポートして呼び出す。
-- **コンテンツ管理: Sveltia CMS**（Git連携ヘッドレスCMS）。玉置はフォームに入力して保存ボタンを押すだけ。
+- **コンテンツ管理: Sveltia CMS**（Git連携ヘッドレスCMS、`/admin/`）。玉置はフォームに入力して保存ボタンを押すだけ。
   Git/Markdownは一切見せない。
-- **CMSログイン: Cloudflare Access（メールワンタイムコード）。** 玉置にGitHubアカウントは持たせない。
-  実際のGitHubへの書き込みはCloudflare Workerが専用トークンで代行する。
+- **CMSログイン: 2段階。**
+  1. Cloudflare Access（メールのワンタイムコード）で`/admin/*`への到達を許可リストのメールアドレスだけに制限。
+     許可リストは Access Policy `CMS admin email allowlist`（app id `a5b027e1-e7a5-4fe8-85f2-611619d4ecab`）。
+     2026年9月時点で `japanesekentai@gmail.com` / `tamabone119@gmail.com` / `yuritamakitrombone@gmail.com` を許可。
+     セッション有効期限は730h（約1ヶ月）に延長済み。IdPは明示的に作成した `One-time PIN`
+     （`allowed_idps` で固定、`auto_redirect_to_identity: true`）のみを許可している。
+     **注意**: Zero Trust組織を新規作成すると、デフォルトIdPが「Cloudflareアカウントでログイン」になり
+     One-time PINが自動では追加されない（2026年9月時点の挙動）。One-time PINを明示的に作成し
+     `allowed_idps` に指定しないと、許可リストのメールアドレスでも
+     "Cloudflare sign-in is restricted to members of the account" というエラーでログインできない。
+  2. Sveltia CMS自体はGitHub PAT方式（画面の「アクセストークンを使用してログイン」）。
+     OAuthアプリやCloudflare Worker経由の代行は不要（Sveltia CMSが標準でPATログインをサポートしているため）。
+     玉置にGitHubアカウントは持たせない — **kentaが自分のGitHubでfine-grained PAT
+     （このリポジトリのみ、Contents + Pull requests: Read and write）を発行し、トークン文字列を
+     直接本人に渡す**運用。トークンはブラウザのlocalStorageに保存されるため、一度ログインすれば
+     以降は同じブラウザでは再入力不要。
 
 ## 機能ごとの設計方針
 
