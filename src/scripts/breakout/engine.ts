@@ -14,6 +14,7 @@ export interface BreakoutCallbacks {
   onScoreChange?: (score: number) => void;
   onLivesChange?: (lives: number) => void;
   onStateChange?: (state: GameState) => void;
+  onStageChange?: (stage: number) => void;
 }
 
 interface Paddle {
@@ -73,8 +74,8 @@ const SPEED_RAMP_PER_BRICK = 0.035;
 const MAX_BALLS = 5;
 const CAPSULE_DROP_CHANCE = 0.14;
 const CAPSULE_FALL_SPEED = 120;
-
-const BRICK_HP_BY_ROW = [2, 2, 1, 1, 1]; // 上段ほど硬い
+const STAGE_SPEED_BASELINE_STEP = 0.12; // ステージが進むごとの開始速度の底上げ
+const MAX_BRICK_HP = 4;
 
 export class BreakoutEngine {
   private readonly canvas: HTMLCanvasElement;
@@ -93,6 +94,7 @@ export class BreakoutEngine {
 
   private score = 0;
   private lives = INITIAL_LIVES;
+  private stage = 1;
   private state: GameState = "ready";
 
   private movingLeft = false;
@@ -181,6 +183,10 @@ export class BreakoutEngine {
     return this.state;
   }
 
+  getStage(): number {
+    return this.stage;
+  }
+
   /** スペース/Enter/タップ/HUDボタンに応じて「開始」「一時停止」「再開」「再挑戦」を行う。 */
   handlePrimaryAction(): void {
     breakoutSound.ensureReady();
@@ -195,6 +201,8 @@ export class BreakoutEngine {
   }
 
   reset(): void {
+    this.stage = 1;
+    this.callbacks.onStageChange?.(this.stage);
     this.paddle = this.createPaddle();
     this.balls = [this.createBall()];
     this.bricks = this.createBricks();
@@ -203,6 +211,21 @@ export class BreakoutEngine {
     this.speedMultiplier = 1;
     this.setScore(0);
     this.setLives(INITIAL_LIVES);
+  }
+
+  /** ブロックを全部壊すとゲームを終わらせず、より厳しい次ステージへ進む（無限に難易度が上がる）。 */
+  private advanceStage(): void {
+    this.stage += 1;
+    this.callbacks.onStageChange?.(this.stage);
+    this.setScore(this.score + 100); // ステージクリアボーナス
+    this.bricks = this.createBricks();
+    this.capsules = [];
+    this.speedMultiplier = Math.min(MAX_SPEED_MULTIPLIER, 1 + (this.stage - 1) * STAGE_SPEED_BASELINE_STEP);
+    this.balls = [this.createBall()];
+    for (const ball of this.balls) {
+      this.applySpeedMultiplier(ball, this.speedMultiplier);
+    }
+    breakoutSound.cleared();
   }
 
   destroy(): void {
@@ -236,13 +259,20 @@ export class BreakoutEngine {
     };
   }
 
+  /**
+   * ステージが進むほど硬いブロックの段数が増え、さらに数ステージごとに
+   * 硬いブロックのHP自体も底上げされる（際限なく難しくするための階段状の成長）。
+   */
   private createBricks(): Brick[] {
     const bricks: Brick[] = [];
     const brickWidth = (this.width - BRICK_GAP * (COLS + 1)) / COLS;
     const offsetTop = 30;
+    const toughRows = Math.min(ROWS, 2 + Math.floor((this.stage - 1) / 2));
+    const extraHp = Math.floor((this.stage - 1) / 4);
 
     for (let row = 0; row < ROWS; row++) {
-      const hp = BRICK_HP_BY_ROW[row] ?? 1;
+      const base = row < toughRows ? 2 : 1;
+      const hp = Math.min(MAX_BRICK_HP, base + extraHp);
       for (let col = 0; col < COLS; col++) {
         bricks.push({
           x: BRICK_GAP + col * (brickWidth + BRICK_GAP),
@@ -322,10 +352,8 @@ export class BreakoutEngine {
     } else if (this.movingRight && !this.movingLeft) {
       this.paddle.x += this.paddle.speed * dt;
     } else if (this.pointerTargetX !== null) {
-      const target = this.pointerTargetX - this.paddle.width / 2;
-      const diff = target - this.paddle.x;
-      const maxStep = this.paddle.speed * dt;
-      this.paddle.x += Math.max(-maxStep, Math.min(maxStep, diff));
+      // マウス/タッチの位置に完全に追随させる（速度上限を設けない）。
+      this.paddle.x = this.pointerTargetX - this.paddle.width / 2;
     }
     this.paddle.x = Math.max(0, Math.min(this.width - this.paddle.width, this.paddle.x));
 
@@ -450,10 +478,9 @@ export class BreakoutEngine {
     }
     this.particles = this.particles.filter((p) => p.life > 0);
 
-    // クリア判定
+    // 全ブロック破壊で終了にはせず、次ステージへ進む（無限に難しくなっていく）
     if (this.bricks.every((b) => b.hp <= 0)) {
-      this.setState("cleared");
-      breakoutSound.cleared();
+      this.advanceStage();
     }
   }
 
