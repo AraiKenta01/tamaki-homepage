@@ -21,8 +21,13 @@
 ## 技術スタックと理由
 
 - **静的サイト生成: Astro**（Zero JS by default、Sveltia CMSとの連携実績重視）
-- **ホスティング: Cloudflare Pages + Workers + D1** — サイト・関数・DBが1アカウントで完結し、非IT管理者向け
-  運用がシンプルになるため。GitHub連携でpush=自動デプロイ。
+- **ホスティング: Cloudflare Workers（静的アセット配信）+ D1** — サイト・関数・DBが1アカウントで完結し、
+  非IT管理者向け運用がシンプルになるため。GitHub連携でpush=自動デプロイ。
+  > 補足: ダッシュボードの「Workers & Pages → Create → Pages」から接続しても、実体は`*.pages.dev`ではなく
+  > `*.workers.dev`の**Workers（静的アセット付き）**としてデプロイされる（2026年9月時点でCloudflareが
+  > Pages機能をWorkersに統合している）。設定は現状ダッシュボード側のみで管理されておりリポジトリに
+  > `wrangler.jsonc`は無い。D1バインディングや`/functions`配下のAPIを追加するPhase 5以降で、
+  > `wrangler.jsonc`をリポジトリにコミットして設定をコード管理に寄せること。
 - **コンテンツ管理: Sveltia CMS**（Git連携ヘッドレスCMS）。玉置はフォームに入力して保存ボタンを押すだけ。
   Git/Markdownは一切見せない。
 - **CMSログイン: Cloudflare Access（メールワンタイムコード）。** 玉置にGitHubアカウントは持たせない。
