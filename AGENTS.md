@@ -25,9 +25,11 @@
   非IT管理者向け運用がシンプルになるため。GitHub連携でpush=自動デプロイ。
   > 補足: ダッシュボードの「Workers & Pages → Create → Pages」から接続しても、実体は`*.pages.dev`ではなく
   > `*.workers.dev`の**Workers（静的アセット付き）**としてデプロイされる（2026年9月時点でCloudflareが
-  > Pages機能をWorkersに統合している）。設定は現状ダッシュボード側のみで管理されておりリポジトリに
-  > `wrangler.jsonc`は無い。D1バインディングや`/functions`配下のAPIを追加するPhase 5以降で、
-  > `wrangler.jsonc`をリポジトリにコミットして設定をコード管理に寄せること。
+  > Pages機能をWorkersに統合している）。**そのため`/functions`のファイルベースルーティング（Pages Functions
+  > 方式）は使えない。** 動的なAPIは単一のWorkerエントリポイント（`src/index.ts`、`wrangler.jsonc`の`main`）
+  > 内でルーティングし、`assets.run_worker_first: ["/api/*"]`で`/api/*`だけWorkerを優先させ、それ以外は
+  > 静的アセット（`env.ASSETS.fetch(request)`）にフォールバックする構成にしている。各機能のAPIハンドラは
+  > `src/api/*.ts`に1ファイルずつ置き、`src/index.ts`からインポートして呼び出す。
 - **コンテンツ管理: Sveltia CMS**（Git連携ヘッドレスCMS）。玉置はフォームに入力して保存ボタンを押すだけ。
   Git/Markdownは一切見せない。
 - **CMSログイン: Cloudflare Access（メールワンタイムコード）。** 玉置にGitHubアカウントは持たせない。
@@ -50,9 +52,13 @@
 ## ディレクトリ構成
 
 - `/src` — Astroソース（コンポーネント、ページ、Content Collections）
-- `/public` — 静的アセット
-- `/functions` — Cloudflare Pages Functions（Worker API: カウンター、掲示板投稿、CMS用OAuthプロキシ等）
+- `/src/index.ts` — Workerのエントリポイント（`/api/*`のルーティング、それ以外は静的アセットにフォールバック）
+- `/src/api` — 各API機能のハンドラ（カウンター、掲示板投稿 等）。1機能1ファイル
+- `/public` — 静的アセット（`/public/admin`にSveltia CMS）
 - `/migrations` — Cloudflare D1のSQLマイグレーション
+
+初回のみ: `npx wrangler types` を実行して `worker-configuration.d.ts`（gitignore対象、CIでも自動生成）を
+ローカルに生成しないと、`env.DB` 等の型が解決されない。
 
 ## 開発フロー
 
