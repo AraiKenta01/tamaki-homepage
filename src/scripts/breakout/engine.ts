@@ -239,6 +239,11 @@ export class BreakoutEngine {
     this.setLives(INITIAL_LIVES);
   }
 
+  /** そのステージの「基準」速度倍率（ステージが進むほど少しずつ底上げされる）。 */
+  private stageBaselineMultiplier(): number {
+    return Math.min(MAX_SPEED_MULTIPLIER, 1 + (this.stage - 1) * STAGE_SPEED_BASELINE_STEP);
+  }
+
   /** ブロックを全部壊すとゲームを終わらせず、より厳しい次ステージへ進む（無限に難易度が上がる）。 */
   private advanceStage(): void {
     this.stage += 1;
@@ -246,7 +251,7 @@ export class BreakoutEngine {
     this.setScore(this.score + 100); // ステージクリアボーナス
     this.bricks = this.createBricks();
     this.capsules = [];
-    this.speedMultiplier = Math.min(MAX_SPEED_MULTIPLIER, 1 + (this.stage - 1) * STAGE_SPEED_BASELINE_STEP);
+    this.speedMultiplier = this.stageBaselineMultiplier();
     this.balls = [this.createBall()];
     for (const ball of this.balls) {
       this.applySpeedMultiplier(ball, this.speedMultiplier);
@@ -540,7 +545,16 @@ export class BreakoutEngine {
         this.setState("gameover");
         breakoutSound.gameOver();
       } else {
+        // 復活後の速度は「そのステージの基準値」まで下げて、実際のボール速度と
+        // this.speedMultiplier の記録を必ず揃える。これを揃えないと、次に
+        // ブロックを1個壊した瞬間に「壊す前の（高い）記録値」がいきなり
+        // 適用されて爆速化する（実際に起きていた不具合）。復帰後は基準値から
+        // また SPEED_RAMP_PER_BRICK ずつ徐々に上がっていく。
+        this.speedMultiplier = this.stageBaselineMultiplier();
         this.balls = [this.createBall()];
+        for (const ball of this.balls) {
+          this.applySpeedMultiplier(ball, this.speedMultiplier);
+        }
         this.capsules = [];
       }
     }
