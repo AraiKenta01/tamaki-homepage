@@ -44,5 +44,10 @@ collections:
       - { name: title, label: 曲名・作品名, widget: string }
       - { name: releaseDate, label: リリース日, widget: datetime, date_format: "YYYY-MM-DD", time_format: false }
       - { name: type, label: 種別, widget: select, options: ["single", "album", "EP"] }
+      - { name: coverImage, label: ジャケ写, widget: image, required: false }
+      - { name: composer, label: 作曲者, widget: string, required: false }
+      - { name: arranger, label: 編曲者, widget: string, required: false }
+      - { name: description, label: 概要, widget: text, required: false }
       - { name: spotifyUrl, label: Spotify URL, widget: string, required: false }
+      - { name: appleMusicUrl, label: Apple Music URL, widget: string, required: false }
       - { name: youtubeUrl, label: YouTube URL, widget: string, required: false }

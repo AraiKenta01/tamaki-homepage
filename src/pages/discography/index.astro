@@ -24,17 +24,21 @@ const TYPE_LABEL: Record<string, string> = {
       </div>
     ) : (
       all.map((entry) => (
-        <div class="box">
-          <p>
-            <strong>{entry.data.title}</strong>（{TYPE_LABEL[entry.data.type]}）
-          </p>
-          <p>{formatDate(entry.data.releaseDate)}</p>
-          <p>
-            {entry.data.spotifyUrl && <a href={entry.data.spotifyUrl}>Spotify</a>}
-            {entry.data.spotifyUrl && entry.data.youtubeUrl && " ｜ "}
-            {entry.data.youtubeUrl && <a href={entry.data.youtubeUrl}>YouTube</a>}
-          </p>
-        </div>
+        <a class="box discography-list-item" href={`/discography/${entry.id}/`}>
+          {entry.data.coverImage && (
+            <img
+              class="discography-thumb"
+              src={entry.data.coverImage}
+              alt={entry.data.title}
+            />
+          )}
+          <div>
+            <p class="discography-list-title">{entry.data.title}</p>
+            <p class="discography-list-meta">
+              {TYPE_LABEL[entry.data.type]} ／ {formatDate(entry.data.releaseDate)}
+            </p>
+          </div>
+        </a>
       ))
     )
   }
