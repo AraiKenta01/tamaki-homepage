@@ -4,5 +4,12 @@
   "assets": {
     "directory": "./dist",
     "html_handling": "auto-trailing-slash"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tamaki-homepage-db",
+      "database_id": "1b05268d-28c4-42fd-a4d9-056ef2e6c428"
+    }
+  ]
 }
