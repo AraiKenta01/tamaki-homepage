@@ -16,6 +16,12 @@ collections:
         fields:
           - { name: name, label: 名前, widget: string }
           - { name: catchphrase, label: キャッチコピー, widget: string, required: false }
+          - { name: photo, label: 顔写真, widget: image, required: false }
+          - { name: email, label: 連絡先メールアドレス, widget: string, required: false }
+          - { name: instagramUrl, label: Instagram URL, widget: string, required: false }
+          - { name: xUrl, label: X (Twitter) URL, widget: string, required: false }
+          - { name: tiktokUrl, label: TikTok URL, widget: string, required: false }
+          - { name: youtubeUrl, label: YouTube URL, widget: string, required: false }
           - { name: body, label: 本文, widget: markdown }
 
   - name: schedule
