@@ -1,10 +1,4 @@
-import type { D1Database, PagesFunction, RateLimit } from "@cloudflare/workers-types";
-
-interface Env {
-  DB: D1Database;
-  RATE_LIMITER: RateLimit;
-  TURNSTILE_SECRET_KEY: string;
-}
+import type { Env } from "../index";
 
 interface BbsPostRow {
   id: number;
@@ -60,7 +54,7 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export async function handleBbsPostsGet(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
   const offset = (page - 1) * PER_PAGE;
@@ -84,9 +78,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     totalCount,
     totalPages,
   });
-};
+}
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export async function handleBbsPostsPost(request: Request, env: Env): Promise<Response> {
   let payload: { name?: string; body?: string; turnstileToken?: string };
   try {
     payload = await request.json();
@@ -134,4 +128,4 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   return jsonResponse({ success: true, post: toPost(row) }, 201);
-};
+}

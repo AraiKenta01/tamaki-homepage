@@ -9,7 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check",
+    "check": "astro check && tsc -p tsconfig.worker.json",
     "astro": "astro"
   },
   "dependencies": {
@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
-    "@cloudflare/workers-types": "^5.20260922.1",
     "typescript": "^6.0.3",
     "wrangler": "^4.136.1"
   }
