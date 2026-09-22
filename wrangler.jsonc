@@ -1,9 +1,12 @@
 {
   "name": "tamaki-homepage",
   "compatibility_date": "2026-09-22",
+  "main": "src/index.ts",
   "assets": {
     "directory": "./dist",
-    "html_handling": "auto-trailing-slash"
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": ["/api/*"]
   },
   "d1_databases": [
     {
