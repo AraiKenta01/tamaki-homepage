@@ -33,14 +33,21 @@ const schedule = defineCollection({
 });
 
 // ディスコグラフィー: 1曲/1作品 = 1ファイル。音源は自前ホスティングせず、
-// Spotify/YouTube等の公式埋め込みプレイヤーへのURLのみを持つ。
+// Spotify/Apple Music/YouTube等の公式埋め込みプレイヤーへのURLのみを持つ。
+// coverImageはCMSアップロード先（public/images/uploads）へのパス文字列。
+// ファイル名（entry.id）を詳細ページのスラッグとして使う。
 const discography = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/discography" }),
   schema: z.object({
     title: z.string(),
     releaseDate: z.coerce.date(),
     type: z.enum(["single", "album", "EP"]),
+    coverImage: z.string().optional(),
+    composer: z.string().optional(),
+    arranger: z.string().optional(),
+    description: z.string().optional(),
     spotifyUrl: z.string().url().optional(),
+    appleMusicUrl: z.string().url().optional(),
     youtubeUrl: z.string().url().optional(),
   }),
 });

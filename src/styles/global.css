@@ -119,6 +119,59 @@ a:focus {
   margin: 0 0 1.2em;
 }
 
+/* ディスコグラフィー一覧 */
+a.discography-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  color: var(--text);
+  text-decoration: none;
+}
+a.discography-list-item:hover,
+a.discography-list-item:focus {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.discography-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: 1px solid var(--border-light);
+  flex: none;
+}
+.discography-list-title {
+  margin: 0;
+  font-weight: bold;
+  text-decoration: underline;
+}
+.discography-list-meta {
+  margin: 0.2em 0 0;
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+
+/* ディスコグラフィー詳細 */
+.discography-cover {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  border: 2px solid var(--border-light);
+  margin: 0 0 0.8em;
+}
+.discography-meta {
+  color: var(--text-muted);
+  margin: 0 0 0.4em;
+}
+.discography-credit {
+  font-size: 0.9em;
+  color: var(--text-muted);
+  margin: 0 0 0.8em;
+}
+.discography-description {
+  white-space: pre-wrap;
+  margin: 0 0 1em;
+}
+
 .marquee-note {
   border: 1px dashed var(--accent);
   color: var(--accent);

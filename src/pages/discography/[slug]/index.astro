@@ -1,0 +1,65 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("discography");
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+const formatDate = (d: Date) =>
+  d.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+
+const TYPE_LABEL: Record<string, string> = {
+  single: "シングル",
+  album: "アルバム",
+  EP: "EP",
+};
+
+const links = [
+  { label: "Spotify", url: entry.data.spotifyUrl },
+  { label: "Apple Music", url: entry.data.appleMusicUrl },
+  { label: "YouTube", url: entry.data.youtubeUrl },
+].filter((link): link is { label: string; url: string } => Boolean(link.url));
+---
+
+<BaseLayout title={entry.data.title}>
+  <div class="box discography-detail">
+    {entry.data.coverImage && (
+      <img class="discography-cover" src={entry.data.coverImage} alt={entry.data.title} />
+    )}
+    <h2>{entry.data.title}</h2>
+    <p class="discography-meta">
+      {TYPE_LABEL[entry.data.type]} ／ {formatDate(entry.data.releaseDate)}
+    </p>
+    {(entry.data.composer || entry.data.arranger) && (
+      <p class="discography-credit">
+        {entry.data.composer && <>作曲: {entry.data.composer}</>}
+        {entry.data.composer && entry.data.arranger && "　"}
+        {entry.data.arranger && <>編曲: {entry.data.arranger}</>}
+      </p>
+    )}
+    {entry.data.description && <p class="discography-description">{entry.data.description}</p>}
+    {links.length > 0 && (
+      <p class="discography-links">
+        {links.map((link, i) => (
+          <>
+            {i > 0 && " ｜ "}
+            <a href={link.url} target="_blank" rel="noopener noreferrer">
+              {link.label}
+            </a>
+          </>
+        ))}
+      </p>
+    )}
+  </div>
+
+  <div class="box">
+    <p><a href="/discography/">← ディスコグラフィー一覧に戻る</a></p>
+  </div>
+</BaseLayout>
