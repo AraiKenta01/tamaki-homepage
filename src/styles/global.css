@@ -140,6 +140,18 @@ a:focus {
 .site-footer p {
   margin: 0.3em 0;
 }
+.hit-counter {
+  font-family: "MS Pゴシック", monospace;
+}
+.hit-counter #hit-counter-value {
+  display: inline-block;
+  background: #111;
+  color: #0f0;
+  font-weight: bold;
+  letter-spacing: 0.15em;
+  padding: 0.1em 0.4em;
+  border: 1px inset var(--border);
+}
 
 /* レスポンシブ: 狭い画面ではナビを縦積みにし、余白を詰める */
 @media (max-width: 480px) {

@@ -1,0 +1,23 @@
+---
+// 来客カウンター: トップページにだけ置く想定のコンポーネント。
+// 表示されるたびに /api/counter を叩いて総アクセス数を1増やし、その結果を表示する。
+---
+
+<p class="hit-counter">
+  来客数: <span id="hit-counter-value">---</span>
+</p>
+
+<script>
+  (async () => {
+    const el = document.getElementById("hit-counter-value");
+    if (!el) return;
+    try {
+      const res = await fetch("/api/counter", { method: "POST" });
+      if (!res.ok) throw new Error("counter request failed");
+      const data = (await res.json()) as { count: number };
+      el.textContent = String(data.count).padStart(6, "0");
+    } catch {
+      el.textContent = "??????";
+    }
+  })();
+</script>
