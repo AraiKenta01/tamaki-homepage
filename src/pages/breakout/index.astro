@@ -1,0 +1,50 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="ブロック崩し">
+  <div class="box">
+    <p>
+      矢印キー（またはA/D）でパドルを操作、あるいはマウス／タッチでも動かせます。<br />
+      スペースキーかクリック／タップでスタート・一時停止・再挑戦。
+    </p>
+  </div>
+
+  <div class="box breakout-hud">
+    <span>スコア: <strong id="breakout-score">0</strong></span>
+    <span>残機: <strong id="breakout-lives">3</strong></span>
+    <span>ハイスコア: <strong id="breakout-highscore">0</strong></span>
+    <span>状態: <strong id="breakout-state">スタート待ち</strong></span>
+  </div>
+
+  <div class="box breakout-stage">
+    <canvas id="breakout-canvas" width="480" height="360"></canvas>
+  </div>
+</BaseLayout>
+
+<style>
+  .breakout-hud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em 1.2em;
+    font-size: 0.9em;
+  }
+
+  .breakout-stage {
+    display: flex;
+    justify-content: center;
+    padding: 0.6em;
+  }
+
+  #breakout-canvas {
+    max-width: 100%;
+    height: auto;
+    background: #0f0f23;
+    border: 2px solid var(--border);
+    touch-action: none;
+  }
+</style>
+
+<script>
+  import "../../scripts/breakout/main";
+</script>
