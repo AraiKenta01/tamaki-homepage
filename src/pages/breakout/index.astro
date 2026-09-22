@@ -5,16 +5,26 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 <BaseLayout title="ブロック崩し">
   <div class="box">
     <p>
-      矢印キー（またはA/D）でパドルを操作、あるいはマウス／タッチでも動かせます。<br />
-      スペースキーかクリック／タップでスタート・一時停止・再挑戦。
+      矢印キー（またはA/D）でパドルを操作、あるいはマウス／タッチでキャンバスに触れて動かせます（指の位置にそのまま追従します）。<br />
+      スタート・再挑戦はキャンバスをタップ／クリックかSpaceキー。一時停止は下のボタンから。<br />
+      ブロックを全部壊すと次のステージへ進み、配置パターンが変わりながらどんどん硬く・速くなっていきます。<br />
+      落ちてくるカプセルをパドルでキャッチ: <span class="capsule-legend capsule-legend-multi">緑</span>=ボール増加／<span
+        class="capsule-legend capsule-legend-wide">青</span>=パドル拡大／<span class="capsule-legend capsule-legend-pierce"
+        >オレンジ</span
+      >=貫通弾。グレーのブロックは壊せません。
     </p>
   </div>
 
   <div class="box breakout-hud">
     <span>スコア: <strong id="breakout-score">0</strong></span>
+    <span>ステージ: <strong id="breakout-stage">1</strong></span>
     <span>残機: <strong id="breakout-lives">3</strong></span>
     <span>ハイスコア: <strong id="breakout-highscore">0</strong></span>
     <span>状態: <strong id="breakout-state">スタート待ち</strong></span>
+    <button id="breakout-pause-button" type="button">スタート／再開</button>
+    <a id="breakout-tweet-link" class="breakout-tweet-link" href="#" target="_blank" rel="noopener noreferrer" hidden>
+      Xでスコアをシェア
+    </a>
   </div>
 
   <div class="box breakout-stage">
@@ -26,8 +36,43 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   .breakout-hud {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.4em 1.2em;
     font-size: 0.9em;
+  }
+
+  #breakout-pause-button {
+    font-family: inherit;
+    font-size: 1em;
+    padding: 0.3em 1.2em;
+    border: 2px outset var(--border-light);
+    background: var(--surface);
+  }
+
+  .breakout-tweet-link {
+    font-family: inherit;
+    font-size: 0.95em;
+    padding: 0.3em 1em;
+    border: 2px outset var(--border-light);
+    background: #1a8cd8;
+    color: #fff;
+    text-decoration: none;
+  }
+  .breakout-tweet-link:visited {
+    color: #fff;
+  }
+
+  .capsule-legend {
+    font-weight: bold;
+  }
+  .capsule-legend-multi {
+    color: #4ade80;
+  }
+  .capsule-legend-wide {
+    color: #38bdf8;
+  }
+  .capsule-legend-pierce {
+    color: #f97316;
   }
 
   .breakout-stage {
