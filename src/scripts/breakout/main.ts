@@ -34,6 +34,7 @@ function init(): void {
   const livesEl = byId<HTMLElement>("breakout-lives");
   const highScoreEl = byId<HTMLElement>("breakout-highscore");
   const stateEl = byId<HTMLElement>("breakout-state");
+  const pauseButton = byId<HTMLButtonElement>("breakout-pause-button");
 
   const scoreStore = defaultScoreStore;
   highScoreEl.textContent = String(scoreStore.getHighScore());
@@ -49,6 +50,7 @@ function init(): void {
     },
     onStateChange: (state) => {
       stateEl.textContent = stateLabel(state);
+      pauseButton.textContent = state === "playing" ? "一時停止" : "スタート／再開";
 
       if (state === "playing") {
         gameOverHandled = false;
@@ -62,6 +64,12 @@ function init(): void {
         });
       }
     },
+  });
+
+  // キャンバスへのタップはプレイ中はパドル移動専用（engine側で一時停止と競合しないよう分離済み）。
+  // スマホでの一時停止/再開はこのボタンから行う。
+  pauseButton.addEventListener("click", () => {
+    engine.handlePrimaryAction();
   });
 
   window.addEventListener("beforeunload", () => {
