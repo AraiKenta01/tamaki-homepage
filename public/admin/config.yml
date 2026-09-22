@@ -1,0 +1,42 @@
+backend:
+  name: github
+  repo: AraiKenta01/tamaki-homepage
+  branch: main
+
+media_folder: "public/images/uploads"
+public_folder: "/images/uploads"
+
+collections:
+  - name: profile
+    label: 自己紹介
+    files:
+      - name: main
+        label: 自己紹介
+        file: src/content/profile/main.md
+        fields:
+          - { name: name, label: 名前, widget: string }
+          - { name: catchphrase, label: キャッチコピー, widget: string, required: false }
+          - { name: body, label: 本文, widget: markdown }
+
+  - name: schedule
+    label: スケジュール
+    folder: src/content/schedule
+    create: true
+    slug: "{{fields.date}}-{{slug}}"
+    fields:
+      - { name: date, label: 開催日, widget: datetime, date_format: "YYYY-MM-DD", time_format: false }
+      - { name: venue, label: 会場, widget: string }
+      - { name: title, label: タイトル, widget: string }
+      - { name: url, label: 詳細・チケットURL, widget: string, required: false }
+      - { name: note, label: 備考, widget: text, required: false }
+
+  - name: discography
+    label: ディスコグラフィー
+    folder: src/content/discography
+    create: true
+    fields:
+      - { name: title, label: 曲名・作品名, widget: string }
+      - { name: releaseDate, label: リリース日, widget: datetime, date_format: "YYYY-MM-DD", time_format: false }
+      - { name: type, label: 種別, widget: select, options: ["single", "album", "EP"] }
+      - { name: spotifyUrl, label: Spotify URL, widget: string, required: false }
+      - { name: youtubeUrl, label: YouTube URL, widget: string, required: false }
