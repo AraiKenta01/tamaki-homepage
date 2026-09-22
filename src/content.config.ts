@@ -5,17 +5,23 @@ import { glob } from "astro/loaders";
 // （独立した自己紹介ページは廃止）。SNSリンク・連絡先メールもここにまとめて持つ。
 // photoはCMSアップロード先（public/images/uploads）へのパス文字列であり、
 // Astroのimage()最適化パイプラインには乗らない（CMSアップロード画像の一般的な制約）。
+//
+// URL/メール系フィールドはすべて z.string()（形式チェックなし）にしてある。
+// z.string().url()/.email() で厳密にバリデーションすると、玉置がCMSでURL欄に
+// 自由なコメント文などを書いてしまった場合にビルドそのものが失敗し、サイト全体が
+// 更新できなくなる（実際に発生した）。非IT管理者の入力ミス1件でサイト全体が
+// 壊れる設計は避け、多少URL形式が崩れていてもビルドは通す方針にする。
 const profile = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/profile" }),
   schema: z.object({
     name: z.string(),
     catchphrase: z.string().optional(),
     photo: z.string().optional(),
-    email: z.string().email().optional(),
-    instagramUrl: z.string().url().optional(),
-    xUrl: z.string().url().optional(),
-    tiktokUrl: z.string().url().optional(),
-    youtubeUrl: z.string().url().optional(),
+    email: z.string().optional(),
+    instagramUrl: z.string().optional(),
+    xUrl: z.string().optional(),
+    tiktokUrl: z.string().optional(),
+    youtubeUrl: z.string().optional(),
   }),
 });
 
@@ -27,7 +33,7 @@ const schedule = defineCollection({
     date: z.coerce.date(),
     venue: z.string(),
     title: z.string(),
-    url: z.string().url().optional(),
+    url: z.string().optional(),
     note: z.string().optional(),
   }),
 });
@@ -46,9 +52,9 @@ const discography = defineCollection({
     composer: z.string().optional(),
     arranger: z.string().optional(),
     description: z.string().optional(),
-    spotifyUrl: z.string().url().optional(),
-    appleMusicUrl: z.string().url().optional(),
-    youtubeUrl: z.string().url().optional(),
+    spotifyUrl: z.string().optional(),
+    appleMusicUrl: z.string().optional(),
+    youtubeUrl: z.string().optional(),
   }),
 });
 
